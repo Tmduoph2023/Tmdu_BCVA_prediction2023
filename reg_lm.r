@@ -5,17 +5,18 @@ library(skimr)
 library(caret)
 library(pROC)
 library(MLmetrics)
+library(boot)
 
 #training dataset&testing dataset
 traindata
 testdata
 
-#make the formula of choosed features
+#make the formula of selected features
 form_reg3 <-as.formula(
-  paste0('BCVA_3y ~ ',paste(colnames(traindata)[c(#choosed features)],collapse = '+'))
+  paste0('BCVA_3y ~ ',paste(colnames(traindata)[c(#selected features)],collapse = '+'))
 )
 form_reg5 <-as.formula(
-  paste0('BCVA_5y ~ ',paste(colnames(traindata)[c(#choosed features)],collapse = '+'))
+  paste0('BCVA_5y ~ ',paste(colnames(traindata)[c(#selected features)],collapse = '+'))
 )
 
 #build the model
@@ -66,4 +67,63 @@ ggplot(aes(x=Predicted5,y=Observed5),data=comparison5)+ggtitle("Calibration")+
   xlab("Predicted 5 year BCVA")+
   ylab("Observed 5 year BCVA")
 
+#the way to get 95%CI would be the same for other models
+#95%CI of 3y
+#create a function 
+RMSE <- function(data, indices) {
+  d <- data[indices,]
+  testpred3 <- predict(modelCV3,newdata = d)
+  RMSE <- defaultSummary(data.frame(obs = d$BCVA_3y, pred = testpred3))[1]
+  return(RMSE)
+}
+Rsquared <- function(data, indices) {
+  d <- data[indices,]
+  testpred3 <- predict(modelCV3,newdata = d)
+  Rsquared <- defaultSummary(data.frame(obs = d$BCVA_3y, pred = testpred3))[2]
+  return(Rsquared)
+}
+MAE <- function(data, indices) {
+  d <- data[indices,]
+  testpred3 <- predict(modelCV3,newdata = d)
+  MAE <- defaultSummary(data.frame(obs = d$BCVA_3y, pred = testpred3))[3]
+  return(MAE)
+}
+# run bootstrap to get 95% confidence interval
+boot_RMSE <- boot(testdata, RMSE, R = 1000) 
+boot_ci_RMSE <- boot.ci(boot_RMSE, type = "bca")
 
+boot_Rsquared <- boot(testdata,Rsquared, R = 1000) 
+boot_ci_Rsquared <- boot.ci(boot_Rsquared, type = "bca")
+
+boot_MAE <- boot(testdata,MAE, R = 1000) 
+boot_ci_MAE <- boot.ci(boot_MAE, type = "bca")
+
+#95%CI of 5y
+#create a function 
+RMSE <- function(data, indices) {
+  d <- data[indices,]
+  testpred5 <- predict(modelCV5,newdata = d)
+  RMSE <- defaultSummary(data.frame(obs = d$BCVA_5y, pred = testpred5))[1]
+  return(RMSE)
+}
+Rsquared <- function(data, indices) {
+  d <- data[indices,]
+  testpred5 <- predict(modelCV5,newdata = d)
+  Rsquared <- defaultSummary(data.frame(obs = d$BCVA_5y, pred = testpred5))[2]
+  return(Rsquared)
+}
+MAE <- function(data, indices) {
+  d <- data[indices,]
+  testpred5 <- predict(modelCV5,newdata = d)
+  MAE <- defaultSummary(data.frame(obs = d$BCVA_5y, pred = testpred5))[3]
+  return(MAE)
+}
+# run bootstrap to get 95% confidence interval
+boot_RMSE <- boot(testdata, RMSE, R = 1000) 
+boot_ci_RMSE <- boot.ci(boot_RMSE, type = "bca")
+
+boot_Rsquared <- boot(testdata,Rsquared, R = 1000) 
+boot_ci_Rsquared <- boot.ci(boot_Rsquared, type = "bca")
+
+boot_MAE <- boot(testdata,MAE, R = 1000) 
+boot_ci_MAE <- boot.ci(boot_MAE, type = "bca")
